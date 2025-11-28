@@ -87,6 +87,16 @@ function setupEventListeners() {
   document.getElementById('cancelSupportBtn').addEventListener('click', hidePeerSupportModal);
   document.getElementById('confirmSupportBtn').addEventListener('click', handlePeerSupportConfirmation);
 
+  // Educational modal resource clicks
+  document.getElementById('digitalSafetyResource').addEventListener('click', showDigitalSafetyModal);
+  document.getElementById('legalRightsResource').addEventListener('click', showLegalRightsModal);
+  document.getElementById('bystanderTipsResource').addEventListener('click', showBystanderTipsModal);
+
+  // Educational modal close buttons
+  document.getElementById('closeDigitalSafetyBtn').addEventListener('click', hideDigitalSafetyModal);
+  document.getElementById('closeLegalRightsBtn').addEventListener('click', hideLegalRightsModal);
+  document.getElementById('closeBystanderTipsBtn').addEventListener('click', hideBystanderTipsModal);
+
   // Close modals when clicking backdrop
   document.getElementById('panicModal').addEventListener('click', (e) => {
     if (e.target.id === 'panicModal') hidePanicModal();
@@ -96,6 +106,15 @@ function setupEventListeners() {
   });
   document.getElementById('addContactModal').addEventListener('click', (e) => {
     if (e.target.id === 'addContactModal') hideAddContactModal();
+  });
+  document.getElementById('digitalSafetyModal').addEventListener('click', (e) => {
+    if (e.target.id === 'digitalSafetyModal') hideDigitalSafetyModal();
+  });
+  document.getElementById('legalRightsModal').addEventListener('click', (e) => {
+    if (e.target.id === 'legalRightsModal') hideLegalRightsModal();
+  });
+  document.getElementById('bystanderTipsModal').addEventListener('click', (e) => {
+    if (e.target.id === 'bystanderTipsModal') hideBystanderTipsModal();
   });
 }
 
@@ -439,3 +458,32 @@ document.querySelector('[data-tab="circleTab"]')?.addEventListener('click', asyn
   const { trustedContacts = [] } = await chrome.storage.local.get(['trustedContacts']);
   renderContacts(trustedContacts);
 });
+
+// Educational Modal Functions
+
+// Digital Safety Modal
+function showDigitalSafetyModal() {
+  document.getElementById('digitalSafetyModal').classList.add('active');
+}
+
+function hideDigitalSafetyModal() {
+  document.getElementById('digitalSafetyModal').classList.remove('active');
+}
+
+// Legal Rights Modal
+function showLegalRightsModal() {
+  document.getElementById('legalRightsModal').classList.add('active');
+}
+
+function hideLegalRightsModal() {
+  document.getElementById('legalRightsModal').classList.remove('active');
+}
+
+// Bystander Tips Modal
+function showBystanderTipsModal() {
+  document.getElementById('bystanderTipsModal').classList.add('active');
+}
+
+function hideBystanderTipsModal() {
+  document.getElementById('bystanderTipsModal').classList.remove('active');
+}
