@@ -1,5 +1,5 @@
 /**
- * Voice transcription helper using internal Speech-to-Text service
+ * Voice transcription using Google Speech-to-Text API
  *
  * Frontend implementation guide:
  * 1. Capture audio using MediaRecorder API
@@ -8,20 +8,16 @@
  * 
  * Example usage:
  * ```tsx
- * // Frontend component
  * const transcribeMutation = trpc.voice.transcribe.useMutation({
  *   onSuccess: (data) => {
  *     console.log(data.text); // Full transcription
  *     console.log(data.language); // Detected language
- *     console.log(data.segments); // Timestamped segments
  *   }
  * });
  * 
- * // After uploading audio to storage
  * transcribeMutation.mutate({
  *   audioUrl: uploadedAudioUrl,
  *   language: 'en', // optional
- *   prompt: 'Transcribe the meeting' // optional
  * });
  * ```
  */
@@ -29,163 +25,156 @@ import { ENV } from "./env";
 
 export type TranscribeOptions = {
   audioUrl: string; // URL to the audio file (e.g., S3 URL)
-  language?: string; // Optional: specify language code (e.g., "en", "es", "zh")
-  prompt?: string; // Optional: custom prompt for the transcription
+  language?: string; // Optional: specify language code (e.g., "en-US", "es-ES")
+  prompt?: string; // Optional: context for better transcription
 };
 
-// Native Whisper API segment format
-export type WhisperSegment = {
-  id: number;
-  seek: number;
+export type TranscriptionSegment = {
+  text: string;
   start: number;
   end: number;
-  text: string;
-  tokens: number[];
-  temperature: number;
-  avg_logprob: number;
-  compression_ratio: number;
-  no_speech_prob: number;
+  confidence: number;
 };
 
-// Native Whisper API response format
-export type WhisperResponse = {
-  task: "transcribe";
+export type TranscriptionResponse = {
+  text: string;
   language: string;
-  duration: number;
-  text: string;
-  segments: WhisperSegment[];
+  confidence: number;
+  segments?: TranscriptionSegment[];
 };
-
-export type TranscriptionResponse = WhisperResponse; // Return native Whisper API response directly
 
 export type TranscriptionError = {
   error: string;
-  code: "FILE_TOO_LARGE" | "INVALID_FORMAT" | "TRANSCRIPTION_FAILED" | "UPLOAD_FAILED" | "SERVICE_ERROR";
+  code: "FILE_TOO_LARGE" | "INVALID_FORMAT" | "TRANSCRIPTION_FAILED" | "SERVICE_ERROR";
   details?: string;
 };
 
 /**
- * Transcribe audio to text using the internal Speech-to-Text service
- * 
- * @param options - Audio data and metadata
- * @returns Transcription result or error
+ * Transcribe audio using Google Speech-to-Text API
+ * Supports multiple audio formats and languages
  */
 export async function transcribeAudio(
   options: TranscribeOptions
 ): Promise<TranscriptionResponse | TranscriptionError> {
+  if (!ENV.geminiApiKey) {
+    return {
+      error: "Voice transcription service is not configured",
+      code: "SERVICE_ERROR",
+      details: "GEMINI_API_KEY is not set"
+    };
+  }
+
   try {
-    // Step 1: Validate environment configuration
-    if (!ENV.forgeApiUrl) {
+    // Step 1: Download audio from URL
+    const audioResponse = await fetch(options.audioUrl);
+    if (!audioResponse.ok) {
       return {
-        error: "Voice transcription service is not configured",
-        code: "SERVICE_ERROR",
-        details: "BUILT_IN_FORGE_API_URL is not set"
-      };
-    }
-    if (!ENV.forgeApiKey) {
-      return {
-        error: "Voice transcription service authentication is missing",
-        code: "SERVICE_ERROR",
-        details: "BUILT_IN_FORGE_API_KEY is not set"
+        error: "Failed to download audio file",
+        code: "INVALID_FORMAT",
+        details: `HTTP ${audioResponse.status}: ${audioResponse.statusText}`
       };
     }
 
-    // Step 2: Download audio from URL
-    let audioBuffer: Buffer;
-    let mimeType: string;
-    try {
-      const response = await fetch(options.audioUrl);
-      if (!response.ok) {
-        return {
-          error: "Failed to download audio file",
-          code: "INVALID_FORMAT",
-          details: `HTTP ${response.status}: ${response.statusText}`
-        };
-      }
-      
-      audioBuffer = Buffer.from(await response.arrayBuffer());
-      mimeType = response.headers.get('content-type') || 'audio/mpeg';
-      
-      // Check file size (16MB limit)
-      const sizeMB = audioBuffer.length / (1024 * 1024);
-      if (sizeMB > 16) {
-        return {
-          error: "Audio file exceeds maximum size limit",
-          code: "FILE_TOO_LARGE",
-          details: `File size is ${sizeMB.toFixed(2)}MB, maximum allowed is 16MB`
-        };
-      }
-    } catch (error) {
+    const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
+    const mimeType = audioResponse.headers.get('content-type') || 'audio/mpeg';
+
+    // Check file size (10MB limit for Google Speech-to-Text)
+    const sizeMB = audioBuffer.length / (1024 * 1024);
+    if (sizeMB > 10) {
       return {
-        error: "Failed to fetch audio file",
-        code: "SERVICE_ERROR",
-        details: error instanceof Error ? error.message : "Unknown error"
+        error: "Audio file exceeds maximum size limit",
+        code: "FILE_TOO_LARGE",
+        details: `File size is ${sizeMB.toFixed(2)}MB, maximum allowed is 10MB`
       };
     }
 
-    // Step 3: Create FormData for multipart upload to Whisper API
-    const formData = new FormData();
-    
-    // Create a Blob from the buffer and append to form
-    const filename = `audio.${getFileExtension(mimeType)}`;
-    const audioBlob = new Blob([new Uint8Array(audioBuffer)], { type: mimeType });
-    formData.append("file", audioBlob, filename);
-    
-    formData.append("model", "whisper-1");
-    formData.append("response_format", "verbose_json");
-    
-    // Add prompt - use custom prompt if provided, otherwise generate based on language
-    const prompt = options.prompt || (
-      options.language 
-        ? `Transcribe the user's voice to text, the user's working language is ${getLanguageName(options.language)}`
-        : "Transcribe the user's voice to text"
+    // Step 2: Convert audio to base64
+    const audioContent = audioBuffer.toString('base64');
+
+    // Step 3: Determine language code
+    const languageCode = options.language || "en-US";
+
+    // Step 4: Call Google Speech-to-Text API
+    const response = await fetch(
+      `https://speech.googleapis.com/v1/speech:recognize?key=${ENV.geminiApiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          config: {
+            encoding: getAudioEncoding(mimeType),
+            sampleRateHertz: 16000, // Standard sample rate
+            languageCode: languageCode,
+            enableAutomaticPunctuation: true,
+            enableWordTimeOffsets: true,
+            model: "latest_long", // Use latest long-form model
+            useEnhanced: true,
+          },
+          audio: {
+            content: audioContent,
+          },
+        }),
+      }
     );
-    formData.append("prompt", prompt);
-
-    // Step 4: Call the transcription service
-    const baseUrl = ENV.forgeApiUrl.endsWith("/")
-      ? ENV.forgeApiUrl
-      : `${ENV.forgeApiUrl}/`;
-    
-    const fullUrl = new URL(
-      "v1/audio/transcriptions",
-      baseUrl
-    ).toString();
-
-    const response = await fetch(fullUrl, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${ENV.forgeApiKey}`,
-        "Accept-Encoding": "identity",
-      },
-      body: formData,
-    });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
+      const errorText = await response.text();
       return {
         error: "Transcription service request failed",
         code: "TRANSCRIPTION_FAILED",
-        details: `${response.status} ${response.statusText}${errorText ? `: ${errorText}` : ""}`
+        details: `${response.status} ${response.statusText}: ${errorText}`
       };
     }
 
-    // Step 5: Parse and return the transcription result
-    const whisperResponse = await response.json() as WhisperResponse;
-    
-    // Validate response structure
-    if (!whisperResponse.text || typeof whisperResponse.text !== 'string') {
+    const result = await response.json();
+
+    // Step 5: Parse response
+    if (!result.results || result.results.length === 0) {
       return {
-        error: "Invalid transcription response",
-        code: "SERVICE_ERROR",
-        details: "Transcription service returned an invalid response format"
+        error: "No transcription results",
+        code: "TRANSCRIPTION_FAILED",
+        details: "Audio may be too short or unclear"
       };
     }
 
-    return whisperResponse; // Return native Whisper API response directly
+    // Combine all transcription alternatives
+    const transcripts = result.results.map((r: any) =>
+      r.alternatives[0]?.transcript || ""
+    );
+    const fullText = transcripts.join(" ");
+
+    // Extract segments with timestamps
+    const segments: TranscriptionSegment[] = [];
+    result.results.forEach((r: any) => {
+      const alternative = r.alternatives[0];
+      if (alternative?.words) {
+        alternative.words.forEach((word: any) => {
+          segments.push({
+            text: word.word,
+            start: parseFloat(word.startTime?.seconds || 0),
+            end: parseFloat(word.endTime?.seconds || 0),
+            confidence: word.confidence || 0,
+          });
+        });
+      }
+    });
+
+    // Calculate average confidence
+    const avgConfidence = result.results.reduce(
+      (sum: number, r: any) => sum + (r.alternatives[0]?.confidence || 0),
+      0
+    ) / result.results.length;
+
+    return {
+      text: fullText,
+      language: languageCode,
+      confidence: avgConfidence,
+      segments: segments.length > 0 ? segments : undefined,
+    };
 
   } catch (error) {
-    // Handle unexpected errors
     return {
       error: "Voice transcription failed",
       code: "SERVICE_ERROR",
@@ -195,50 +184,21 @@ export async function transcribeAudio(
 }
 
 /**
- * Helper function to get file extension from MIME type
+ * Helper function to determine audio encoding from MIME type
  */
-function getFileExtension(mimeType: string): string {
-  const mimeToExt: Record<string, string> = {
-    'audio/webm': 'webm',
-    'audio/mp3': 'mp3',
-    'audio/mpeg': 'mp3',
-    'audio/wav': 'wav',
-    'audio/wave': 'wav',
-    'audio/ogg': 'ogg',
-    'audio/m4a': 'm4a',
-    'audio/mp4': 'm4a',
+function getAudioEncoding(mimeType: string): string {
+  const encodingMap: Record<string, string> = {
+    'audio/webm': 'WEBM_OPUS',
+    'audio/mp3': 'MP3',
+    'audio/mpeg': 'MP3',
+    'audio/wav': 'LINEAR16',
+    'audio/wave': 'LINEAR16',
+    'audio/ogg': 'OGG_OPUS',
+    'audio/flac': 'FLAC',
+    'audio/amr': 'AMR',
   };
-  
-  return mimeToExt[mimeType] || 'audio';
-}
 
-/**
- * Helper function to get full language name from ISO code
- */
-function getLanguageName(langCode: string): string {
-  const langMap: Record<string, string> = {
-    'en': 'English',
-    'es': 'Spanish',
-    'fr': 'French',
-    'de': 'German',
-    'it': 'Italian',
-    'pt': 'Portuguese',
-    'ru': 'Russian',
-    'ja': 'Japanese',
-    'ko': 'Korean',
-    'zh': 'Chinese',
-    'ar': 'Arabic',
-    'hi': 'Hindi',
-    'nl': 'Dutch',
-    'pl': 'Polish',
-    'tr': 'Turkish',
-    'sv': 'Swedish',
-    'da': 'Danish',
-    'no': 'Norwegian',
-    'fi': 'Finnish',
-  };
-  
-  return langMap[langCode] || langCode;
+  return encodingMap[mimeType] || 'LINEAR16';
 }
 
 /**
@@ -253,12 +213,10 @@ function getLanguageName(langCode: string): string {
  *     .input(z.object({
  *       audioUrl: z.string(),
  *       language: z.string().optional(),
- *       prompt: z.string().optional(),
  *     }))
  *     .mutation(async ({ input, ctx }) => {
  *       const result = await transcribeAudio(input);
  *       
- *       // Check if it's an error
  *       if ('error' in result) {
  *         throw new TRPCError({
  *           code: 'BAD_REQUEST',
@@ -266,16 +224,6 @@ function getLanguageName(langCode: string): string {
  *           cause: result,
  *         });
  *       }
- *       
- *       // Optionally save transcription to database
- *       await db.insert(transcriptions).values({
- *         userId: ctx.user.id,
- *         text: result.text,
- *         duration: result.duration,
- *         language: result.language,
- *         audioUrl: input.audioUrl,
- *         createdAt: new Date(),
- *       });
  *       
  *       return result;
  *     }),
