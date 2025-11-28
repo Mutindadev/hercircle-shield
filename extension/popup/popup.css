@@ -45,9 +45,12 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.1);
   }
@@ -98,11 +101,11 @@ body {
   border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
   background-color: rgba(255, 255, 255, 0.5);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   transform: translateX(20px);
 }
 
@@ -487,6 +490,7 @@ input:checked + .slider:before {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -501,6 +505,7 @@ input:checked + .slider:before {
     transform: translateY(20px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -615,7 +620,7 @@ input:checked + .slider:before {
   font-weight: 500;
 }
 
-.radio-option input[type="radio"]:checked + span {
+.radio-option input[type="radio"]:checked+span {
   font-weight: 600;
   color: #E91E63;
 }
@@ -638,9 +643,19 @@ input:checked + .slider:before {
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  75% {
+    transform: translateX(5px);
+  }
 }
 
 .modal-support .modal-header {
@@ -653,8 +668,171 @@ input:checked + .slider:before {
     transform: translate(-50%, -20px);
     opacity: 0;
   }
+
   to {
     transform: translate(-50%, 0);
     opacity: 1;
   }
+}
+
+/* Educational Modals */
+.educational-modal .modal-content {
+  max-width: 360px;
+  width: 95%;
+}
+
+.modal-content-scrollable {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content-scrollable .modal-body {
+  overflow-y: auto;
+  max-height: calc(90vh - 180px);
+  padding-right: 8px;
+}
+
+.modal-content-scrollable .modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content-scrollable .modal-body::-webkit-scrollbar-track {
+  background: #F0F0F0;
+  border-radius: 3px;
+}
+
+.modal-content-scrollable .modal-body::-webkit-scrollbar-thumb {
+  background: #E91E63;
+  border-radius: 3px;
+}
+
+.modal-content-scrollable .modal-body::-webkit-scrollbar-thumb:hover {
+  background: #C2185B;
+}
+
+/* Educational Modal Typography */
+.modal-body h4 {
+  font-size: 16px;
+  color: #E91E63;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.modal-body h5 {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 6px;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.modal-body p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #555;
+  margin-bottom: 12px;
+}
+
+/* Modal Sections */
+.modal-section {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.modal-section:last-child {
+  border-bottom: none;
+}
+
+/* Modal Quote */
+.modal-quote {
+  background: #FFF5F8;
+  border-left: 4px solid #E91E63;
+  padding: 12px;
+  margin: 12px 0;
+  font-style: italic;
+  color: #666;
+  border-radius: 4px;
+}
+
+/* Tip Lists */
+.modal-tip-list {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.modal-tip-list li {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.modal-tip-list li strong {
+  color: #E91E63;
+  font-weight: 600;
+}
+
+/* Tip Items (for 5 D's) */
+.modal-tip-item {
+  background: #FFF5F8;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.modal-tip-item h5 {
+  margin-top: 0;
+  color: #E91E63;
+}
+
+.modal-tip-item p {
+  margin-bottom: 8px;
+}
+
+.modal-tip-item p:last-child {
+  margin-bottom: 0;
+}
+
+.modal-tip-item em {
+  color: #999;
+  font-size: 12px;
+}
+
+/* External Links */
+.external-links {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 2px solid #F0F0F0;
+}
+
+.external-links h5 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #E91E63;
+}
+
+.link-item {
+  display: block;
+  padding: 10px 12px;
+  background: #FFF5F8;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  text-decoration: none;
+  color: #333;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.link-item:hover {
+  background: #FFE5EF;
+  border-color: #E91E63;
+  transform: translateX(4px);
+}
+
+.link-item:active {
+  transform: translateX(2px);
 }
