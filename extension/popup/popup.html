@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HerCircle Shield</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header / Status Bar -->
+    <header class="header">
+      <div class="logo">
+        <span class="heart-icon">💗</span>
+        <span class="app-name">HerCircle Shield</span>
+      </div>
+      <div class="status-toggle">
+        <label class="switch">
+          <input type="checkbox" id="protectionToggle" checked>
+          <span class="slider"></span>
+        </label>
+        <span class="status-text">Protected</span>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Home Tab -->
+      <div id="homeTab" class="tab-content active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="detectionCount">0</div>
+            <div class="stat-label">Threats Detected</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="blockedCount">0</div>
+            <div class="stat-label">Content Blocked</div>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-panic" id="panicBtn">
+            🚨 Panic Button
+          </button>
+          <button class="btn btn-secondary" id="evidenceBtn">
+            📸 Capture Evidence
+          </button>
+          <button class="btn btn-secondary" id="supportBtn">
+            💬 Get Support
+          </button>
+        </div>
+
+        <div class="weekly-report">
+          <h3>This Week</h3>
+          <div class="report-item">
+            <span>Most Active Platform:</span>
+            <strong id="activePlatform">Twitter</strong>
+          </div>
+          <div class="report-item">
+            <span>Safety Score:</span>
+            <strong id="safetyScore" class="score-good">Good</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Circle Tab -->
+      <div id="circleTab" class="tab-content">
+        <div class="section">
+          <h3>Trusted Contacts</h3>
+          <div id="contactsList" class="contacts-list">
+            <p class="empty-state">No trusted contacts yet. Add someone you trust.</p>
+          </div>
+          <button class="btn btn-secondary btn-block" id="addContactBtn">
+            + Add Trusted Contact
+          </button>
+        </div>
+
+        <div class="section">
+          <h3>Support Circles</h3>
+          <div id="circlesList" class="circles-list">
+            <p class="empty-state">Join a support circle to connect with peers.</p>
+          </div>
+          <button class="btn btn-secondary btn-block" id="joinCircleBtn">
+            🔍 Find Peer Support
+          </button>
+        </div>
+      </div>
+
+      <!-- Learn Tab -->
+      <div id="learnTab" class="tab-content">
+        <div class="section">
+          <h3>Safety Resources</h3>
+          <div class="resource-list">
+            <div class="resource-item">
+              <span class="resource-icon">🛡️</span>
+              <div>
+                <div class="resource-title">Digital Safety Guide</div>
+                <div class="resource-desc">Protect yourself online</div>
+              </div>
+            </div>
+            <div class="resource-item">
+              <span class="resource-icon">⚖️</span>
+              <div>
+                <div class="resource-title">Legal Rights</div>
+                <div class="resource-desc">Know your rights</div>
+              </div>
+            </div>
+            <div class="resource-item">
+              <span class="resource-icon">🤝</span>
+              <div>
+                <div class="resource-title">Bystander Tips</div>
+                <div class="resource-desc">How to help others</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Regional Hotlines</h3>
+          <div class="hotline-list">
+            <div class="hotline-item">
+              <strong>Kenya:</strong> 1195 (GBV Hotline), FIDA Kenya
+            </div>
+            <div class="hotline-item">
+              <strong>Nigeria:</strong> 0800 ABUSE (22873)
+            </div>
+            <div class="hotline-item">
+              <strong>South Africa:</strong> 0800 150 150
+            </div>
+            <div class="hotline-item">
+              <strong>Ghana:</strong> 055 378 9991
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div id="settingsTab" class="tab-content">
+        <div class="section">
+          <h3>Detection Settings</h3>
+          
+          <div class="setting-item">
+            <label for="sensitivitySlider">Sensitivity Level</label>
+            <div class="sensitivity-control">
+              <input type="range" id="sensitivitySlider" min="1" max="3" value="2">
+              <div class="sensitivity-labels">
+                <span>Low</span>
+                <span>Balanced</span>
+                <span>High</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <label class="checkbox-label">
+              <input type="checkbox" id="autoHideToggle" checked>
+              <span>Auto-hide harmful content</span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <label class="checkbox-label">
+              <input type="checkbox" id="notificationsToggle" checked>
+              <span>Enable notifications</span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <label class="checkbox-label">
+              <input type="checkbox" id="heartAnimationsToggle" checked>
+              <span>Show heart animations</span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <label class="checkbox-label">
+              <input type="checkbox" id="gpsToggle">
+              <span>Enable GPS for panic button</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Data & Privacy</h3>
+          <button class="btn btn-secondary btn-block" id="exportDataBtn">
+            📥 Export My Data
+          </button>
+          <button class="btn btn-danger btn-block" id="deleteDataBtn">
+            🗑️ Delete All Data
+          </button>
+        </div>
+
+        <div class="section">
+          <div class="version-info">
+            Version 1.0.0 • Made with 💗 for African women
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="homeTab">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+      </button>
+      <button class="nav-item" data-tab="circleTab">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Circle</span>
+      </button>
+      <button class="nav-item" data-tab="learnTab">
+        <span class="nav-icon">📚</span>
+        <span class="nav-label">Learn</span>
+      </button>
+      <button class="nav-item" data-tab="settingsTab">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Modals -->
+  <div id="addContactModal" class="modal">
+    <div class="modal-content">
+      <h3>Add Trusted Contact</h3>
+      <input type="text" id="contactName" placeholder="Name" class="input">
+      <input type="email" id="contactEmail" placeholder="Email (optional)" class="input">
+      <input type="tel" id="contactPhone" placeholder="Phone (optional)" class="input">
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancelContactBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveContactBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
