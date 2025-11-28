@@ -233,6 +233,66 @@
     </div>
   </div>
 
+  <!-- Panic Button Confirmation Modal -->
+  <div id="panicModal" class="modal">
+    <div class="modal-content modal-panic">
+      <div class="modal-header">
+        <span class="modal-icon">🚨</span>
+        <h3>Panic Alert</h3>
+      </div>
+      <div class="modal-body">
+        <p class="modal-description">This will:</p>
+        <ul class="modal-list">
+          <li>Alert your trusted contacts</li>
+          <li>Capture current evidence</li>
+          <li>Share your location (if enabled)</li>
+        </ul>
+        <p class="modal-question">Are you sure you want to continue?</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancelPanicBtn">Cancel</button>
+        <button class="btn btn-danger" id="confirmPanicBtn">Send Alert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Peer Support Modal -->
+  <div id="peerSupportModal" class="modal">
+    <div class="modal-content modal-support">
+      <div class="modal-header">
+        <span class="modal-icon">💬</span>
+        <h3>Find Peer Support</h3>
+      </div>
+      <div class="modal-body">
+        <label class="modal-label">What type of support are you looking for?</label>
+        <div class="support-options">
+          <label class="radio-option">
+            <input type="radio" name="supportType" value="emotional" checked>
+            <span>💗 Emotional support</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="supportType" value="legal">
+            <span>⚖️ Legal advice</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="supportType" value="safety">
+            <span>🛡️ Safety planning</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="supportType" value="general">
+            <span>🤝 General peer support</span>
+          </label>
+        </div>
+        <label class="modal-label" style="margin-top: 12px;">Additional details (optional):</label>
+        <textarea id="supportDetails" class="input textarea" placeholder="Share anything you'd like your peer to know..." rows="3"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancelSupportBtn">Cancel</button>
+        <button class="btn btn-primary" id="confirmSupportBtn">Find Match</button>
+      </div>
+    </div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>
