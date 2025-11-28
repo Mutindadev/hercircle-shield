@@ -92,14 +92,17 @@ const API_BASE_URL = 'https://your-backend.com/api/trpc';
 |----------|--------|---------|
 | `/api/trpc/ai.detect` | POST | Content detection with Gemini AI |
 
-**Request Format (tRPC):**
+**Request Format (tRPC with superjson):**
 ```json
 {
-  "input": {
-    "content": "text to analyze"
+  "0": {
+    "json": {
+      "content": "text to analyze"
+    }
   }
 }
 ```
+**Query Parameter:** `?batch=1`
 
 **Response Format:**
 ```json

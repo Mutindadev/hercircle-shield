@@ -8,13 +8,13 @@ document.addEventListener('DOMContentLoaded', init);
 async function init() {
   // Load stats
   await loadStats();
-  
+
   // Load settings
   await loadSettings();
-  
+
   // Set up event listeners
   setupEventListeners();
-  
+
   // Set up tab navigation
   setupTabNavigation();
 }
@@ -27,7 +27,7 @@ async function loadStats() {
     'activePlatform',
     'safetyScore'
   ]);
-  
+
   document.getElementById('detectionCount').textContent = stats.detectionCount || 0;
   document.getElementById('blockedCount').textContent = stats.blockedCount || 0;
   document.getElementById('activePlatform').textContent = stats.activePlatform || 'Twitter';
@@ -37,12 +37,12 @@ async function loadStats() {
 // Load settings from storage
 async function loadSettings() {
   const { settings } = await chrome.storage.local.get(['settings']);
-  
+
   if (settings) {
     // Map sensitivity to slider value
     const sensitivityMap = { low: 1, balanced: 2, high: 3 };
     document.getElementById('sensitivitySlider').value = sensitivityMap[settings.sensitivity] || 2;
-    
+
     document.getElementById('autoHideToggle').checked = settings.autoHide || false;
     document.getElementById('notificationsToggle').checked = settings.enableNotifications || false;
     document.getElementById('heartAnimationsToggle').checked = settings.enableHeartAnimations || false;
@@ -54,42 +54,61 @@ async function loadSettings() {
 function setupEventListeners() {
   // Protection toggle
   document.getElementById('protectionToggle').addEventListener('change', handleProtectionToggle);
-  
+
   // Action buttons
   document.getElementById('panicBtn').addEventListener('click', handlePanicButton);
   document.getElementById('evidenceBtn').addEventListener('click', handleCaptureEvidence);
   document.getElementById('supportBtn').addEventListener('click', handleGetSupport);
-  
+
   // Circle tab buttons
   document.getElementById('addContactBtn').addEventListener('click', showAddContactModal);
   document.getElementById('joinCircleBtn').addEventListener('click', handleJoinCircle);
-  
+
   // Settings
   document.getElementById('sensitivitySlider').addEventListener('change', handleSensitivityChange);
   document.getElementById('autoHideToggle').addEventListener('change', handleSettingChange);
   document.getElementById('notificationsToggle').addEventListener('change', handleSettingChange);
   document.getElementById('heartAnimationsToggle').addEventListener('change', handleSettingChange);
   document.getElementById('gpsToggle').addEventListener('change', handleSettingChange);
-  
+
   // Data management
   document.getElementById('exportDataBtn').addEventListener('click', handleExportData);
   document.getElementById('deleteDataBtn').addEventListener('click', handleDeleteData);
-  
+
   // Modal actions
   document.getElementById('cancelContactBtn').addEventListener('click', hideAddContactModal);
   document.getElementById('saveContactBtn').addEventListener('click', handleSaveContact);
+
+  // Panic modal actions
+  document.getElementById('cancelPanicBtn').addEventListener('click', hidePanicModal);
+  document.getElementById('confirmPanicBtn').addEventListener('click', handlePanicConfirmation);
+
+  // Peer support modal actions
+  document.getElementById('cancelSupportBtn').addEventListener('click', hidePeerSupportModal);
+  document.getElementById('confirmSupportBtn').addEventListener('click', handlePeerSupportConfirmation);
+
+  // Close modals when clicking backdrop
+  document.getElementById('panicModal').addEventListener('click', (e) => {
+    if (e.target.id === 'panicModal') hidePanicModal();
+  });
+  document.getElementById('peerSupportModal').addEventListener('click', (e) => {
+    if (e.target.id === 'peerSupportModal') hidePeerSupportModal();
+  });
+  document.getElementById('addContactModal').addEventListener('click', (e) => {
+    if (e.target.id === 'addContactModal') hideAddContactModal();
+  });
 }
 
 // Tab navigation
 function setupTabNavigation() {
   const navItems = document.querySelectorAll('.nav-item');
-  
+
   navItems.forEach(item => {
     item.addEventListener('click', () => {
       // Remove active class from all
       navItems.forEach(nav => nav.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-      
+
       // Add active class to clicked
       item.classList.add('active');
       const tabId = item.dataset.tab;
@@ -102,7 +121,7 @@ function setupTabNavigation() {
 async function handleProtectionToggle(e) {
   const isEnabled = e.target.checked;
   const statusText = document.querySelector('.status-text');
-  
+
   if (isEnabled) {
     statusText.textContent = 'Protected';
     statusText.style.color = 'white';
@@ -110,24 +129,32 @@ async function handleProtectionToggle(e) {
     statusText.textContent = 'Disabled';
     statusText.style.color = 'rgba(255, 255, 255, 0.7)';
   }
-  
+
   await chrome.storage.local.set({ protectionEnabled: isEnabled });
 }
 
 // Panic button handler
 async function handlePanicButton() {
-  const confirmed = confirm(
-    '🚨 PANIC ALERT\n\n' +
-    'This will:\n' +
-    '• Alert your trusted contacts\n' +
-    '• Capture current evidence\n' +
-    '• Share your location (if enabled)\n\n' +
-    'Continue?'
-  );
-  
-  if (!confirmed) return;
-  
+  // Show custom panic modal instead of confirm()
+  showPanicModal();
+}
+
+// Show panic modal
+function showPanicModal() {
+  document.getElementById('panicModal').classList.add('active');
+}
+
+// Hide panic modal
+function hidePanicModal() {
+  document.getElementById('panicModal').classList.remove('active');
+}
+
+// Handle panic confirmation
+async function handlePanicConfirmation() {
   try {
+    // Hide modal first
+    hidePanicModal();
+
     // Send message to background
     const response = await chrome.runtime.sendMessage({
       type: 'PANIC_BUTTON',
@@ -136,7 +163,7 @@ async function handlePanicButton() {
         includeLocation: document.getElementById('gpsToggle').checked
       }
     });
-    
+
     if (response.success) {
       showNotification('Panic alert sent to your trusted contacts', 'success');
     } else {
@@ -152,7 +179,7 @@ async function handlePanicButton() {
 async function handleCaptureEvidence() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
+
     const response = await chrome.runtime.sendMessage({
       type: 'CAPTURE_EVIDENCE',
       data: {
@@ -161,7 +188,7 @@ async function handleCaptureEvidence() {
         timestamp: Date.now()
       }
     });
-    
+
     if (response.success) {
       showNotification('Evidence captured successfully', 'success');
     } else {
@@ -177,7 +204,7 @@ async function handleCaptureEvidence() {
 function handleGetSupport() {
   // Switch to Circle tab
   document.querySelector('[data-tab="circleTab"]').click();
-  
+
   // Highlight peer matching button
   const joinBtn = document.getElementById('joinCircleBtn');
   joinBtn.style.animation = 'pulse 1s 3';
@@ -202,16 +229,16 @@ async function handleSaveContact() {
   const name = document.getElementById('contactName').value.trim();
   const email = document.getElementById('contactEmail').value.trim();
   const phone = document.getElementById('contactPhone').value.trim();
-  
+
   if (!name) {
     alert('Please enter a contact name');
     return;
   }
-  
+
   try {
     // Get existing contacts
     const { trustedContacts = [] } = await chrome.storage.local.get(['trustedContacts']);
-    
+
     // Add new contact
     trustedContacts.push({
       id: Date.now(),
@@ -220,16 +247,16 @@ async function handleSaveContact() {
       phone,
       addedAt: Date.now()
     });
-    
+
     // Save to storage
     await chrome.storage.local.set({ trustedContacts });
-    
+
     // Update UI
     renderContacts(trustedContacts);
-    
+
     // Close modal
     hideAddContactModal();
-    
+
     showNotification('Trusted contact added', 'success');
   } catch (error) {
     console.error('Save contact error:', error);
@@ -240,12 +267,12 @@ async function handleSaveContact() {
 // Render contacts list
 function renderContacts(contacts) {
   const list = document.getElementById('contactsList');
-  
+
   if (contacts.length === 0) {
     list.innerHTML = '<p class="empty-state">No trusted contacts yet. Add someone you trust.</p>';
     return;
   }
-  
+
   list.innerHTML = contacts.map(contact => `
     <div class="contact-item" style="padding: 12px; background: #FFF5F8; border-radius: 8px; margin-bottom: 8px;">
       <div style="font-weight: 600; margin-bottom: 4px;">${contact.name}</div>
@@ -253,22 +280,41 @@ function renderContacts(contacts) {
         ${contact.email || contact.phone || 'No contact info'}
       </div>
     </div>
-  `).join('');
+    `).join('');
 }
 
 // Join circle handler
 async function handleJoinCircle() {
-  const supportType = prompt('What type of support are you looking for?\n\n' +
-    'Examples:\n' +
-    '- Emotional support\n' +
-    '- Legal advice\n' +
-    '- Safety planning\n' +
-    '- General peer support');
-  
-  if (!supportType) return;
-  
+  // Show custom peer support modal instead of prompt()
+  showPeerSupportModal();
+}
+
+// Show peer support modal
+function showPeerSupportModal() {
+  document.getElementById('peerSupportModal').classList.add('active');
+  // Clear previous input
+  document.getElementById('supportDetails').value = '';
+  // Reset to first option
+  document.querySelector('input[name="supportType"][value="emotional"]').checked = true;
+}
+
+// Hide peer support modal
+function hidePeerSupportModal() {
+  document.getElementById('peerSupportModal').classList.remove('active');
+}
+
+// Handle peer support confirmation
+async function handlePeerSupportConfirmation() {
+  // Get selected support type
+  const selectedType = document.querySelector('input[name="supportType"]:checked');
+  const supportType = selectedType ? selectedType.value : 'general';
+  const details = document.getElementById('supportDetails').value.trim();
+
+  // Hide modal
+  hidePeerSupportModal();
+
   showNotification('Searching for peer matches...', 'info');
-  
+
   // In production, this would call the backend API
   setTimeout(() => {
     showNotification('No matches found right now. We\'ll notify you when someone joins.', 'info');
@@ -280,11 +326,11 @@ async function handleSensitivityChange(e) {
   const value = parseInt(e.target.value);
   const sensitivityMap = { 1: 'low', 2: 'balanced', 3: 'high' };
   const sensitivity = sensitivityMap[value];
-  
+
   const { settings = {} } = await chrome.storage.local.get(['settings']);
   settings.sensitivity = sensitivity;
   await chrome.storage.local.set({ settings });
-  
+
   showNotification(`Sensitivity set to ${sensitivity}`, 'success');
 }
 
@@ -292,9 +338,9 @@ async function handleSensitivityChange(e) {
 async function handleSettingChange(e) {
   const settingName = e.target.id.replace('Toggle', '');
   const value = e.target.checked;
-  
+
   const { settings = {} } = await chrome.storage.local.get(['settings']);
-  
+
   // Map setting names
   const settingMap = {
     autoHide: 'autoHide',
@@ -302,7 +348,7 @@ async function handleSettingChange(e) {
     heartAnimations: 'enableHeartAnimations',
     gps: 'enableGPS'
   };
-  
+
   const key = settingMap[settingName];
   if (key) {
     settings[key] = value;
@@ -317,12 +363,12 @@ async function handleExportData() {
     const dataStr = JSON.stringify(data, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
-    a.download = `hercircle-shield-data-${Date.now()}.json`;
+    a.download = `hercircle - shield - data - ${Date.now()}.json`;
     a.click();
-    
+
     showNotification('Data exported successfully', 'success');
   } catch (error) {
     console.error('Export error:', error);
@@ -341,13 +387,13 @@ async function handleDeleteData() {
     '• Settings and preferences\n\n' +
     'This action cannot be undone. Continue?'
   );
-  
+
   if (!confirmed) return;
-  
+
   try {
     await chrome.storage.local.clear();
     showNotification('All data deleted', 'success');
-    
+
     // Reload popup
     setTimeout(() => {
       window.location.reload();
@@ -364,23 +410,23 @@ function showNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.style.cssText = `
     position: fixed;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#F44336' : '#2196F3'};
-    color: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 10000;
-    font-size: 13px;
-    font-weight: 600;
-    animation: slideDown 0.3s ease-out;
+  top: 16px;
+  left: 50 %;
+  transform: translateX(-50 %);
+  background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#F44336' : '#2196F3'};
+  color: white;
+  padding: 12px 24px;
+  border - radius: 8px;
+  box - shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z - index: 10000;
+  font - size: 13px;
+  font - weight: 600;
+  animation: slideDown 0.3s ease - out;
   `;
   notification.textContent = message;
-  
+
   document.body.appendChild(notification);
-  
+
   // Remove after 3 seconds
   setTimeout(() => {
     notification.style.animation = 'slideUp 0.3s ease-out';
