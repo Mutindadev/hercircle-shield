@@ -84,16 +84,18 @@ async function handleDetection(content, tabId) {
   try {
     const settings = await getSettings();
 
-    // Call backend AI detection using tRPC mutation format
-    // tRPC mutations expect: { input: { ...params } }
-    const response = await fetch(`${API_BASE_URL}/ai.detect`, {
+    // Call backend AI detection using tRPC HTTP adapter batch format with superjson
+    // tRPC with superjson expects: ?batch=1 and {"0": {"json": {content: "..."}}} body
+    const response = await fetch(`${API_BASE_URL}/ai.detect?batch=1`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        input: {
-          content: content
+        "0": {
+          "json": {
+            content: content
+          }
         }
       })
     });
@@ -104,8 +106,8 @@ async function handleDetection(content, tabId) {
 
     const data = await response.json();
 
-    // tRPC returns: { result: { data: {...} } }
-    const result = data.result?.data || data;
+    // tRPC batch format with superjson returns: [{ result: { data: { json: {...} } } }]
+    const result = data[0]?.result?.data?.json || data[0]?.result?.data || data;
 
     if (result.isHarmful) {
       // Update stats
