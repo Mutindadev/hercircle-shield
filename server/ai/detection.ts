@@ -1,4 +1,4 @@
-import { invokeLLM } from "../_core/llm";
+import { invokeGemini, invokeOpenAI } from "../_core/llm";
 
 export interface DetectionResult {
   isHarmful: boolean;
@@ -36,12 +36,14 @@ Respond with a JSON object:
 
 export async function detectWithGemini(textContent: string): Promise<DetectionResult> {
   try {
-    const response = await invokeLLM({
+    const response = await invokeGemini({
       messages: [
         { role: "system", content: DETECTION_SYSTEM_PROMPT },
-        { role: "user", content: `Analyze this content:
+        {
+          role: "user", content: `Analyze this content:
 
-${textContent}` },
+${textContent}`
+        },
       ],
       response_format: {
         type: "json_schema",
@@ -74,7 +76,7 @@ ${textContent}` },
     const result = JSON.parse(typeof responseContent === "string" ? responseContent : JSON.stringify(responseContent));
     return {
       ...result,
-      aiModel: "gemini",
+      aiModel: "gemini-2.0-flash-exp",
     };
   } catch (error) {
     console.error("Gemini detection error:", error);
@@ -84,8 +86,8 @@ ${textContent}` },
 
 export async function detectWithOpenAI(textContent: string): Promise<DetectionResult> {
   try {
-    // Fallback to OpenAI if Gemini fails
-    const response = await invokeLLM({
+    // Use OpenAI with latest model
+    const response = await invokeOpenAI({
       messages: [
         { role: "system", content: DETECTION_SYSTEM_PROMPT },
         { role: "user", content: `Analyze this content:\n\n${textContent}` },
@@ -121,7 +123,7 @@ export async function detectWithOpenAI(textContent: string): Promise<DetectionRe
     const result = JSON.parse(typeof responseContent === "string" ? responseContent : JSON.stringify(responseContent));
     return {
       ...result,
-      aiModel: "openai",
+      aiModel: "gpt-4o",
     };
   } catch (error) {
     console.error("OpenAI detection error:", error);
