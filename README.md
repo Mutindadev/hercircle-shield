@@ -32,37 +32,86 @@ HerCircle Shield combines advanced AI detection with practical support tools to 
 
 ### Extension Interface
 
-![Extension Icon](screenshots/Screenshot%20from%202025-11-29%2016-04-42.png)
-*HerCircle Shield purple heart icon in Chrome toolbar*
-
-![Home Dashboard](screenshots/Screenshot%20from%202025-11-29%2016-05-13.png)
-*Main dashboard with panic button, quick actions, and weekly safety stats*
-
-![Circles Tab](screenshots/Screenshot%20from%202025-11-29%2016-05-41.png)
-*Trusted contacts and support circles management*
-
-![Learn Tab](screenshots/Screenshot%20from%202025-11-29%2016-06-06.png)
-*Educational resources and safety guides*
-
-![Settings Tab](screenshots/Screenshot%20from%202025-11-29%2016-06-24.png)
-*Extension settings and preferences*
+<table>
+  <tr>
+    <td width="33%">
+      <img src="screenshots/Screenshot from 2025-11-29 16-04-42.png" alt="Extension Icon"/>
+      <p align="center"><em>Extension icon in toolbar</em></p>
+    </td>
+    <td width="33%">
+      <img src="screenshots/Screenshot from 2025-11-29 16-05-13.png" alt="Home Dashboard"/>
+      <p align="center"><em>Home dashboard</em></p>
+    </td>
+    <td width="33%">
+      <img src="screenshots/Screenshot from 2025-11-29 16-05-41.png" alt="Circles Tab"/>
+      <p align="center"><em>Circles tab</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="33%">
+      <img src="screenshots/Screenshot from 2025-11-29 16-06-06.png" alt="Learn Tab"/>
+      <p align="center"><em>Educational resources</em></p>
+    </td>
+    <td width="33%">
+      <img src="screenshots/Screenshot from 2025-11-29 16-06-24.png" alt="Settings Tab"/>
+      <p align="center"><em>Settings & preferences</em></p>
+    </td>
+    <td width="33%">
+      <img src="screenshots/Screenshot from 2025-11-29 16-06-46.png" alt="Panic Button"/>
+      <p align="center"><em>Panic button modal</em></p>
+    </td>
+  </tr>
+</table>
 
 ### Key Features
 
-![Panic Button Modal](screenshots/Screenshot%20from%202025-11-29%2016-06-46.png)
-*Emergency panic button with GPS sharing option*
+<table>
+  <tr>
+    <td width="33%">
+      <img src="screenshots/Screenshot from 2025-11-29 16-07-01.png" alt="Evidence Capture"/>
+      <p align="center"><em>Evidence capture</em></p>
+    </td>
+    <td width="33%">
+      <img src="screenshots/Screenshot from 2025-11-29 16-07-20.png" alt="Educational Modal"/>
+      <p align="center"><em>Educational content</em></p>
+    </td>
+    <td width="33%">
+      <img src="screenshots/Screenshot from 2025-11-29 16-04-08.png" alt="Threat Detection"/>
+      <p align="center"><em>Threat detection</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="33%">
+      <img src="screenshots/Screenshot from 2025-11-29 16-30-52.png" alt="Extension Popup"/>
+      <p align="center"><em>Complete popup interface</em></p>
+    </td>
+  </tr>
+</table>
 
-![Evidence Capture](screenshots/Screenshot%20from%202025-11-29%2016-07-01.png)
-*Screenshot capture for evidence collection*
+---
 
-![Educational Modal](screenshots/Screenshot%20from%202025-11-29%2016-07-20.png)
-*In-depth educational content and safety tips*
+## Development Team
 
-![Threat Detection](screenshots/Screenshot%20from%202025-11-29%2016-04-08.png)
-*Real-time threat detection on social media platforms*
-
-![Extension Popup](screenshots/Screenshot%20from%202025-11-29%2016-30-52.png)
-*Complete extension popup interface*
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <strong>Regina Mutinda</strong><br/>
+      <em>Frontend Developer</em>
+    </td>
+    <td align="center" width="25%">
+      <strong>Emmanuel Mose</strong><br/>
+      <em>Testing and Research</em>
+    </td>
+    <td align="center" width="25%">
+      <strong>Clarence Mabeya</strong><br/>
+      <em>AI / Backend Developer</em>
+    </td>
+    <td align="center" width="25%">
+      <strong>Clifftone Ochieng</strong><br/>
+      <em>Support UI/UX</em>
+    </td>
+  </tr>
+</table>
 
 ---
 
