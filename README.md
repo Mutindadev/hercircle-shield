@@ -28,6 +28,44 @@ HerCircle Shield combines advanced AI detection with practical support tools to 
 
 ---
 
+## Screenshots
+
+### Extension Interface
+
+![Extension Icon](screenshots/Screenshot%20from%202025-11-29%2016-04-42.png)
+*HerCircle Shield purple heart icon in Chrome toolbar*
+
+![Home Dashboard](screenshots/Screenshot%20from%202025-11-29%2016-05-13.png)
+*Main dashboard with panic button, quick actions, and weekly safety stats*
+
+![Circles Tab](screenshots/Screenshot%20from%202025-11-29%2016-05-41.png)
+*Trusted contacts and support circles management*
+
+![Learn Tab](screenshots/Screenshot%20from%202025-11-29%2016-06-06.png)
+*Educational resources and safety guides*
+
+![Settings Tab](screenshots/Screenshot%20from%202025-11-29%2016-06-24.png)
+*Extension settings and preferences*
+
+### Key Features
+
+![Panic Button Modal](screenshots/Screenshot%20from%202025-11-29%2016-06-46.png)
+*Emergency panic button with GPS sharing option*
+
+![Evidence Capture](screenshots/Screenshot%20from%202025-11-29%2016-07-01.png)
+*Screenshot capture for evidence collection*
+
+![Educational Modal](screenshots/Screenshot%20from%202025-11-29%2016-07-20.png)
+*In-depth educational content and safety tips*
+
+![Threat Detection](screenshots/Screenshot%20from%202025-11-29%2016-04-08.png)
+*Real-time threat detection on social media platforms*
+
+![Extension Popup](screenshots/Screenshot%20from%202025-11-29%2016-30-52.png)
+*Complete extension popup interface*
+
+---
+
 ## Technology Stack
 
 ### Frontend
