@@ -175,8 +175,8 @@ async function handlePanicConfirmation() {
     hidePanicModal();
 
     // Get location if GPS is enabled
-    let location = null;
-    const includeLocation = document.getElementById('gpsToggle').checked;
+    let location = undefined; // Use undefined instead of null
+    const includeLocation = document.getElementById('gpsToggle')?.checked || false;
 
     if (includeLocation && navigator.geolocation) {
       try {
@@ -189,37 +189,45 @@ async function handlePanicConfirmation() {
       }
     }
 
-    // Try to create incident in backend
-    try {
-      const incidentData = {
-        title: 'Panic Alert',
-        description: 'Emergency panic button activated',
-        incidentType: 'panic',
-        severity: 'critical',
-        location: location,
-        metadata: JSON.stringify({
-          timestamp: Date.now(),
-          source: 'extension_panic_button'
-        })
-      };
+    // Prepare incident data (only include location if it exists)
+    const incidentData = {
+      title: 'Panic Alert',
+      description: 'Emergency panic button activated',
+      incidentType: 'panic',
+      severity: 'critical',
+      metadata: JSON.stringify({
+        timestamp: Date.now(),
+        source: 'extension_panic_button'
+      })
+    };
 
-      const result = await api.incidents.create(incidentData);
+    // Only add location if we have it
+    if (location) {
+      incidentData.location = location;
+    }
+
+    // Try to create incident in backend using anonymous endpoint
+    try {
+      const result = await api.incidents.createAnonymous(incidentData);
 
       if (result.success) {
-        showNotification(`Panic alert sent! Incident ID: ${result.id}`, 'success');
+        showNotification(`✅ Panic alert sent! Incident ID: ${result.id}`, 'success');
+        console.log('Incident created:', result);
 
         // Also send message to background for additional processing
         chrome.runtime.sendMessage({
           type: 'PANIC_BUTTON',
           data: {
             incidentId: result.id,
+            anonymousId: result.anonymousId,
             timestamp: Date.now(),
             location: location
           }
         });
       }
     } catch (apiError) {
-      console.warn('Backend API call failed, using local notification:', apiError);
+      console.error('Backend API call failed:', apiError);
+      showNotification('❌ Failed to send panic alert to backend', 'error');
 
       // Fallback: Send message to background without backend
       const response = await chrome.runtime.sendMessage({
@@ -231,10 +239,8 @@ async function handlePanicConfirmation() {
         }
       });
 
-      if (response.success) {
+      if (response && response.success) {
         showNotification('Panic alert sent to your trusted contacts', 'success');
-      } else {
-        showNotification(response.message || 'Failed to send alert', 'error');
       }
     }
   } catch (error) {

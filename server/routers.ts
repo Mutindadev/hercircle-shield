@@ -32,7 +32,7 @@ import {
 import { detectContent, detectBatch } from "./ai";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
+  // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -67,6 +67,27 @@ export const appRouter = router({
         });
         return { success: true, id: Number(incident[0].insertId) };
       }),
+
+    // Anonymous panic endpoint for unauthenticated users
+    createAnonymous: publicProcedure
+      .input(z.object({
+        title: z.string().optional(),
+        description: z.string().optional(),
+        incidentType: z.string().optional(),
+        severity: z.enum(["low", "medium", "high", "critical"]).default("critical"),
+        location: z.string().optional(),
+        metadata: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const anonymousId = nanoid();
+        const incident = await createIncident({
+          userId: 0, // Anonymous user
+          anonymousId: anonymousId,
+          ...input,
+        });
+        return { success: true, id: Number(incident[0].insertId), anonymousId };
+      }),
+
     list: protectedProcedure.query(async ({ ctx }) => {
       return getIncidentsByUserId(ctx.user.id);
     }),

@@ -1,7 +1,7 @@
 // HerCircle Shield - API Client for Extension
 // tRPC client helper for communicating with backend
 
-const API_BASE_URL = 'http://localhost:3000/api/trpc';
+const API_BASE_URL = 'http://localhost:3001/api/trpc';
 
 /**
  * Get authentication session cookie from chrome storage
@@ -76,12 +76,21 @@ const api = {
     // Incidents API
     incidents: {
         /**
-         * Create a new incident report
+         * Create a new incident report (requires authentication)
          * @param {object} data - Incident data
          * @returns {Promise<{success: boolean, id: number}>}
          */
         create: async (data) => {
             return callAPI('incidents.create', data);
+        },
+
+        /**
+         * Create anonymous incident (no authentication required)
+         * @param {object} data - Incident data
+         * @returns {Promise<{success: boolean, id: number, anonymousId: string}>}
+         */
+        createAnonymous: async (data) => {
+            return callAPI('incidents.createAnonymous', data);
         },
 
         /**
