@@ -174,19 +174,68 @@ async function handlePanicConfirmation() {
     // Hide modal first
     hidePanicModal();
 
-    // Send message to background
-    const response = await chrome.runtime.sendMessage({
-      type: 'PANIC_BUTTON',
-      data: {
-        timestamp: Date.now(),
-        includeLocation: document.getElementById('gpsToggle').checked
-      }
-    });
+    // Get location if GPS is enabled
+    let location = null;
+    const includeLocation = document.getElementById('gpsToggle').checked;
 
-    if (response.success) {
-      showNotification('Panic alert sent to your trusted contacts', 'success');
-    } else {
-      showNotification(response.message || 'Failed to send alert', 'error');
+    if (includeLocation && navigator.geolocation) {
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+        location = `${position.coords.latitude},${position.coords.longitude}`;
+      } catch (error) {
+        console.warn('Could not get location:', error);
+      }
+    }
+
+    // Try to create incident in backend
+    try {
+      const incidentData = {
+        title: 'Panic Alert',
+        description: 'Emergency panic button activated',
+        incidentType: 'panic',
+        severity: 'critical',
+        location: location,
+        metadata: JSON.stringify({
+          timestamp: Date.now(),
+          source: 'extension_panic_button'
+        })
+      };
+
+      const result = await api.incidents.create(incidentData);
+
+      if (result.success) {
+        showNotification(`Panic alert sent! Incident ID: ${result.id}`, 'success');
+
+        // Also send message to background for additional processing
+        chrome.runtime.sendMessage({
+          type: 'PANIC_BUTTON',
+          data: {
+            incidentId: result.id,
+            timestamp: Date.now(),
+            location: location
+          }
+        });
+      }
+    } catch (apiError) {
+      console.warn('Backend API call failed, using local notification:', apiError);
+
+      // Fallback: Send message to background without backend
+      const response = await chrome.runtime.sendMessage({
+        type: 'PANIC_BUTTON',
+        data: {
+          timestamp: Date.now(),
+          includeLocation: includeLocation,
+          location: location
+        }
+      });
+
+      if (response.success) {
+        showNotification('Panic alert sent to your trusted contacts', 'success');
+      } else {
+        showNotification(response.message || 'Failed to send alert', 'error');
+      }
     }
   } catch (error) {
     console.error('Panic button error:', error);
