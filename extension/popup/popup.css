@@ -219,7 +219,7 @@ input:checked+.slider:before {
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-   margin-bottom: 12px;
+  margin-bottom: 12px;
 }
 
 .weekly-report h3 {
@@ -244,42 +244,42 @@ input:checked+.slider:before {
   color: #4CAF50;
 }
 
-  /* Women's Events List - NEW */
-  .events-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+/* Women's Events List - NEW */
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-  .event-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    background: #FFF5F8;
-    border-radius: 8px;
-    border-left: 3px solid #E91E63;
-  }
+.event-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #FFF5F8;
+  border-radius: 8px;
+  border-left: 3px solid #E91E63;
+}
 
-  .event-icon {
-    font-size: 18px;
-  }
+.event-icon {
+  font-size: 18px;
+}
 
-  .event-info {
-    flex: 1;
-  }
+.event-info {
+  flex: 1;
+}
 
-  .event-title {
-    font-weight: 600;
-    font-size: 12px;
-    color: #333;
-    margin-bottom: 2px;
-  }
+.event-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: #333;
+  margin-bottom: 2px;
+}
 
-  .event-date {
-    font-size: 10px;
-    color: #999;
-  }
+.event-date {
+  font-size: 10px;
+  color: #999;
+}
 
 /* Section */
 .section {
@@ -574,17 +574,17 @@ input:checked+.slider:before {
 }
 
 .modal-content {
-  animation: slideUp 0.3s ease-out;
+  animation: fadeScale 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slideUp {
+@keyframes fadeScale {
   from {
-    transform: translateY(20px);
+    transform: scale(0.95);
     opacity: 0;
   }
 
   to {
-    transform: translateY(0);
+    transform: scale(1);
     opacity: 1;
   }
 }
@@ -910,6 +910,7 @@ input:checked+.slider:before {
     opacity: 0;
     transform: translateX(-50%) translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -920,6 +921,7 @@ input:checked+.slider:before {
   from {
     opacity: 1;
   }
+
   to {
     opacity: 0;
   }
