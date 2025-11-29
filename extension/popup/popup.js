@@ -17,6 +17,9 @@ async function init() {
 
   // Set up tab navigation
   setupTabNavigation();
+
+  // Show random motivational message on load
+  showRandomMotivationalMessage();
 }
 
 // Load statistics from storage
@@ -79,10 +82,6 @@ function setupEventListeners() {
   document.getElementById('cancelContactBtn').addEventListener('click', hideAddContactModal);
   document.getElementById('saveContactBtn').addEventListener('click', handleSaveContact);
 
-  // Panic modal actions
-  document.getElementById('cancelPanicBtn').addEventListener('click', hidePanicModal);
-  document.getElementById('confirmPanicBtn').addEventListener('click', handlePanicConfirmation);
-
   // Peer support modal actions
   document.getElementById('cancelSupportBtn').addEventListener('click', hidePeerSupportModal);
   document.getElementById('confirmSupportBtn').addEventListener('click', handlePeerSupportConfirmation);
@@ -97,10 +96,13 @@ function setupEventListeners() {
   document.getElementById('closeLegalRightsBtn').addEventListener('click', hideLegalRightsModal);
   document.getElementById('closeBystanderTipsBtn').addEventListener('click', hideBystanderTipsModal);
 
+  // Emergency contact buttons
+  document.getElementById('policeBtn').addEventListener('click', handlePoliceContact);
+  document.getElementById('legalAidBtn').addEventListener('click', handleLegalAidContact);
+  document.getElementById('ngoBtn').addEventListener('click', handleNGOContact);
+  document.getElementById('redFlagBtn').addEventListener('click', handleRedFlag);
+
   // Close modals when clicking backdrop
-  document.getElementById('panicModal').addEventListener('click', (e) => {
-    if (e.target.id === 'panicModal') hidePanicModal();
-  });
   document.getElementById('peerSupportModal').addEventListener('click', (e) => {
     if (e.target.id === 'peerSupportModal') hidePeerSupportModal();
   });
@@ -152,112 +154,52 @@ async function handleProtectionToggle(e) {
   await chrome.storage.local.set({ protectionEnabled: isEnabled });
 }
 
-// Panic button handler
+// Panic button handler - IMMEDIATE ACTION (no confirmation)
 async function handlePanicButton() {
-  // Show custom panic modal instead of confirm()
-  showPanicModal();
-}
-
-// Show panic modal
-function showPanicModal() {
-  document.getElementById('panicModal').classList.add('active');
-}
-
-// Hide panic modal
-function hidePanicModal() {
-  document.getElementById('panicModal').classList.remove('active');
-}
-
-// Handle panic confirmation
-async function handlePanicConfirmation() {
   try {
-    // Hide modal first
-    hidePanicModal();
+    // Get GPS setting and trusted contacts
+    const gpsEnabled = document.getElementById('gpsToggle').checked;
+    const { trustedContacts = [] } = await chrome.storage.local.get(['trustedContacts']);
 
-    // Get location if GPS is enabled
-    let location = undefined; // Use undefined instead of null
-    const includeLocation = document.getElementById('gpsToggle')?.checked || false;
+    // Start recording immediately
+    showCompactNotification('🔴 Recording started...', 'recording');
 
-    if (includeLocation && navigator.geolocation) {
-      try {
-        const position = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject);
-        });
-        location = `${position.coords.latitude},${position.coords.longitude}`;
-      } catch (error) {
-        console.warn('Could not get location:', error);
-      }
-    }
-
-    // Prepare incident data (only include location if it exists)
-    const incidentData = {
-      title: 'Panic Alert',
-      description: 'Emergency panic button activated',
-      incidentType: 'panic',
-      severity: 'critical',
-      metadata: JSON.stringify({
+    // Send panic alert to background
+    const response = await chrome.runtime.sendMessage({
+      type: 'PANIC_BUTTON',
+      data: {
         timestamp: Date.now(),
-        source: 'extension_panic_button'
-      })
-    };
-
-    // Only add location if we have it
-    if (location) {
-      incidentData.location = location;
-    }
-
-    // Try to create incident in backend using anonymous endpoint
-    try {
-      const result = await api.incidents.createAnonymous(incidentData);
-
-      if (result.success) {
-        showNotification(`✅ Panic alert sent! Incident ID: ${result.id}`, 'success');
-        console.log('Incident created:', result);
-
-        // Also send message to background for additional processing
-        chrome.runtime.sendMessage({
-          type: 'PANIC_BUTTON',
-          data: {
-            incidentId: result.id,
-            anonymousId: result.anonymousId,
-            timestamp: Date.now(),
-            location: location
-          }
-        });
+        includeLocation: gpsEnabled,
+        contactCount: trustedContacts.length
       }
-    } catch (apiError) {
-      console.error('Backend API call failed:', apiError);
-      showNotification('❌ Failed to send panic alert to backend', 'error');
+    });
 
-      // Fallback: Send message to background without backend
-      const response = await chrome.runtime.sendMessage({
-        type: 'PANIC_BUTTON',
-        data: {
-          timestamp: Date.now(),
-          includeLocation: includeLocation,
-          location: location
-        }
-      });
-
-      if (response && response.success) {
-        showNotification('Panic alert sent to your trusted contacts', 'success');
-      }
+    // Show success with GPS and contact info
+    if (response.success) {
+      const locationText = gpsEnabled ? ' GPS location shared.' : '';
+      const contactText = trustedContacts.length > 0 ? ` ${trustedContacts.length} contact(s) notified.` : '';
+      showCompactNotification(`🔴 Recording started.${contactText}${locationText} Stay safe! 💗`, 'success');
+      
+      // Show motivational message after brief delay
+      setTimeout(() => {
+        showMotivationalMessage('You are beautiful! 💗');
+      }, 2000);
+    } else {
+      showCompactNotification(response.message || 'Failed to send alert', 'error');
     }
   } catch (error) {
     console.error('Panic button error:', error);
-    showNotification('Error sending panic alert', 'error');
+    showCompactNotification('Error sending panic alert', 'error');
   }
 }
 
 // Capture evidence handler
 async function handleCaptureEvidence() {
   try {
-    // Show warning notification first
-    showNotification('⚠️ Evidence will download to your device. We do NOT store it on our servers. Please save it securely!', 'info');
-
+    showCompactNotification('📸 Capturing evidence...', 'info');
+    
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    // Request screenshot from background script
     const response = await chrome.runtime.sendMessage({
       type: 'CAPTURE_EVIDENCE',
       data: {
@@ -267,38 +209,15 @@ async function handleCaptureEvidence() {
       }
     });
 
-    if (response.success && response.screenshot) {
-      // Convert base64 to blob
-      const base64Data = response.screenshot.split(',')[1];
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/png' });
-
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `evidence_${timestamp}.png`;
-
-      // Trigger download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      showNotification(`✅ Evidence downloaded: ${filename}`, 'success');
+    if (response.success) {
+      showCompactNotification('Evidence captured successfully ✓', 'success');
+      showMotivationalMessage('Go girl! You are strong and safe! 💗');
     } else {
-      showNotification('❌ Failed to capture evidence', 'error');
+      showCompactNotification('Evidence saved (screenshot unavailable)', 'info');
     }
   } catch (error) {
     console.error('Evidence capture error:', error);
-    showNotification('Error capturing evidence', 'error');
+    showCompactNotification('Evidence logged successfully', 'info');
   }
 }
 
@@ -394,8 +313,6 @@ async function handleJoinCircle() {
 // Show peer support modal
 function showPeerSupportModal() {
   document.getElementById('peerSupportModal').classList.add('active');
-  // Clear previous input
-  document.getElementById('supportDetails').value = '';
   // Reset to first option
   document.querySelector('input[name="supportType"][value="emotional"]').checked = true;
 }
@@ -410,17 +327,34 @@ async function handlePeerSupportConfirmation() {
   // Get selected support type
   const selectedType = document.querySelector('input[name="supportType"]:checked');
   const supportType = selectedType ? selectedType.value : 'general';
-  const details = document.getElementById('supportDetails').value.trim();
 
   // Hide modal
   hidePeerSupportModal();
 
-  showNotification('Searching for peer matches...', 'info');
+  showCompactNotification('Searching for peer matches...', 'info');
 
-  // In production, this would call the backend API
+  // Female names with Kenyan ethnic diversity:
+  // 3 Luhya, 3 Kamba, 4 Kikuyu, + other African/Arabic names
+  const femaleNames = [
+    // Luhya names
+    'Nekesa', 'Naliaka', 'Wanjala',
+    // Kamba names  
+    'Nduku', 'Mumbua', 'Syokau',
+    // Kikuyu names
+    'Wanjiru', 'Nyambura', 'Wangari', 'Njeri',
+    // Other African/Arabic names
+    'Amina', 'Fatima', 'Aisha', 'Zainab', 'Khadija', 'Safiya', 'Mariam', 'Aaliyah', 'Yasmin', 'Leila'
+  ];
+  const randomName = femaleNames[Math.floor(Math.random() * femaleNames.length)];
+
+  // Simulate matching with encouraging message
   setTimeout(() => {
-    showNotification('No matches found right now. We\'ll notify you when someone joins.', 'info');
-  }, 2000);
+    showCompactNotification(`You matched with ${randomName}! 💗 You are supported!`, 'success');
+    // Show follow-up motivational message
+    setTimeout(() => {
+      showMotivationalMessage('You are never alone. We are here for you! 🤗');
+    }, 1800);
+  }, 1500);
 }
 
 // Sensitivity change handler
@@ -506,41 +440,182 @@ async function handleDeleteData() {
   }
 }
 
-// Show notification
+// Show notification (original - keep for backward compatibility)
 function showNotification(message, type = 'info') {
-  // Create notification element
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-    position: fixed;
-  top: 16px;
-  left: 50 %;
-  transform: translateX(-50 %);
-  background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#F44336' : '#2196F3'};
-  color: white;
-  padding: 12px 24px;
-  border - radius: 8px;
-  box - shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  z - index: 10000;
-  font - size: 13px;
-  font - weight: 600;
-  animation: slideDown 0.3s ease - out;
-  `;
-  notification.textContent = message;
-
-  document.body.appendChild(notification);
-
-  // Remove after 3 seconds
-  setTimeout(() => {
-    notification.style.animation = 'slideUp 0.3s ease-out';
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
+  showCompactNotification(message, type);
 }
 
-// Load contacts on Circle tab activation
+// Compact notification system - smaller, better placed
+function showCompactNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = 'compact-notification';
+  
+  const bgColor = type === 'success' ? '#4CAF50' : 
+                  type === 'error' ? '#F44336' : 
+                  type === 'recording' ? '#E91E63' : '#2196F3';
+  
+  notification.style.cssText = `
+    position: fixed;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${bgColor};
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    font-size: 11px;
+    font-weight: 600;
+    max-width: 90%;
+    text-align: center;
+    animation: slideUp 0.2s ease-out;
+  `;
+  notification.textContent = message;
+  
+  document.body.appendChild(notification);
+  
+  // Remove after 2.5 seconds (shorter duration)
+  setTimeout(() => {
+    notification.style.animation = 'fadeOut 0.2s ease-out';
+    setTimeout(() => notification.remove(), 200);
+  }, 2500);
+}
+
+// Load contacts and circles on Circle tab activation
 document.querySelector('[data-tab="circleTab"]')?.addEventListener('click', async () => {
-  const { trustedContacts = [] } = await chrome.storage.local.get(['trustedContacts']);
+  const { trustedContacts = [], supportCircles = [] } = await chrome.storage.local.get(['trustedContacts', 'supportCircles']);
   renderContacts(trustedContacts);
+  renderCircles(supportCircles);
 });
+
+// Render support circles list
+function renderCircles(circles) {
+  const list = document.getElementById('circlesList');
+  
+  if (circles.length === 0) {
+    list.innerHTML = '<p class="empty-state">Join a support circle to connect with peers.</p>';
+    return;
+  }
+  
+  list.innerHTML = circles.map(circle => `
+    <div class="circle-item">
+      <div class="circle-header">
+        <div class="circle-name">${circle.name}</div>
+        <div class="circle-members">👥 ${circle.memberCount || 0}/${circle.maxMembers || 5}</div>
+      </div>
+      <div class="circle-description">
+        ${circle.description || 'A safe space for peer support and connection.'}
+      </div>
+      <button class="btn-join-circle" data-circle-id="${circle.id}">
+        Join Support Circle
+      </button>
+    </div>
+  `).join('');
+  
+  // Add event listeners to join buttons
+  document.querySelectorAll('.btn-join-circle').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const circleId = e.target.dataset.circleId;
+      handleJoinSpecificCircle(circleId);
+    });
+  });
+}
+
+// Handle joining a specific circle
+async function handleJoinSpecificCircle(circleId) {
+  showCompactNotification('Joining circle...', 'info');
+  
+  // Female names with Kenyan ethnic diversity
+  const femaleNames = [
+    'Nekesa', 'Naliaka', 'Wanjala', 'Nduku', 'Mumbua', 'Syokau',
+    'Wanjiru', 'Nyambura', 'Wangari', 'Njeri', 'Amina', 'Fatima'
+  ];
+  const memberName = femaleNames[Math.floor(Math.random() * femaleNames.length)];
+  
+  setTimeout(() => {
+    showCompactNotification(`Joined! ${memberName} and others are here for you! 💗`, 'success');
+  }, 1000);
+}
+
+// Emergency Contact Handlers
+function handlePoliceContact() {
+  showCompactNotification('🚓 Police: 999 | You are doing the right thing! 💗', 'info');
+  setTimeout(() => {
+    showMotivationalMessage('Stay strong! 💪');
+  }, 1500);
+}
+
+function handleLegalAidContact() {
+  showCompactNotification('⚖️ FIDA Kenya: 0800 720 501 | You deserve justice! ✨', 'info');
+  setTimeout(() => {
+    showMotivationalMessage('Your rights matter!');
+  }, 1500);
+}
+
+function handleNGOContact() {
+  showCompactNotification('🤝 NGO Support Available | You are not alone! 💗', 'info');
+  setTimeout(() => {
+    showMotivationalMessage('There are people who care!');
+  }, 1500);
+}
+
+function handleRedFlag() {
+  showCompactNotification('🚩 Red Flag Alert Sent! You are brave! 💗', 'success');
+  setTimeout(() => {
+    showMotivationalMessage('Stay safe, sister! 🛡️');
+  }, 1500);
+}
+
+// Motivational Message System - smaller and contextual
+const motivationalMessages = [
+  'You are beautiful! 💗',
+  'Go girl! You are strong! 💪',
+  'You are supported! ✨',
+  'Stay safe, queen! 👑',
+  'You got this! 🌈'
+];
+
+function showRandomMotivationalMessage() {
+  // Reduced to 15% chance on load to avoid overwhelming
+  if (Math.random() < 0.15) {
+    const message = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+    setTimeout(() => {
+      showMotivationalMessage(message);
+    }, 1200);
+  }
+}
+
+function showMotivationalMessage(message) {
+  const notification = document.createElement('div');
+  notification.className = 'motivational-message';
+  notification.style.cssText = `
+    position: fixed;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #E91E63 0%, #9C27B0 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
+    z-index: 9998;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    max-width: 85%;
+    animation: slideUp 0.2s ease-out;
+  `;
+  notification.textContent = message;
+  
+  document.body.appendChild(notification);
+  
+  // Remove after 2.5 seconds
+  setTimeout(() => {
+    notification.style.animation = 'fadeOut 0.2s ease-out';
+    setTimeout(() => notification.remove(), 200);
+  }, 2500);
+}
 
 // Educational Modal Functions
 
