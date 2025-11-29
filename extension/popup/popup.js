@@ -252,8 +252,12 @@ async function handlePanicConfirmation() {
 // Capture evidence handler
 async function handleCaptureEvidence() {
   try {
+    // Show warning notification first
+    showNotification('⚠️ Evidence will download to your device. We do NOT store it on our servers. Please save it securely!', 'info');
+
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
+    // Request screenshot from background script
     const response = await chrome.runtime.sendMessage({
       type: 'CAPTURE_EVIDENCE',
       data: {
@@ -263,10 +267,34 @@ async function handleCaptureEvidence() {
       }
     });
 
-    if (response.success) {
-      showNotification('Evidence captured successfully', 'success');
+    if (response.success && response.screenshot) {
+      // Convert base64 to blob
+      const base64Data = response.screenshot.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/png' });
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `evidence_${timestamp}.png`;
+
+      // Trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showNotification(`✅ Evidence downloaded: ${filename}`, 'success');
     } else {
-      showNotification('Failed to capture evidence', 'error');
+      showNotification('❌ Failed to capture evidence', 'error');
     }
   } catch (error) {
     console.error('Evidence capture error:', error);

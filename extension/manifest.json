@@ -11,7 +11,8 @@
     "scripting",
     "alarms",
     "geolocation",
-    "identity"
+    "identity",
+    "downloads"
   ],
   "host_permissions": [
     "http://localhost:3000/*",
