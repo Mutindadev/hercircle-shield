@@ -179,7 +179,7 @@ async function handlePanicButton() {
       const locationText = gpsEnabled ? ' GPS location shared.' : '';
       const contactText = trustedContacts.length > 0 ? ` ${trustedContacts.length} contact(s) notified.` : '';
       showCompactNotification(`🔴 Recording started.${contactText}${locationText} Stay safe! 💗`, 'success');
-      
+
       // Show motivational message after brief delay
       setTimeout(() => {
         showMotivationalMessage('You are beautiful! 💗');
@@ -197,7 +197,7 @@ async function handlePanicButton() {
 async function handleCaptureEvidence() {
   try {
     showCompactNotification('📸 Capturing evidence...', 'info');
-    
+
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     const response = await chrome.runtime.sendMessage({
@@ -209,15 +209,45 @@ async function handleCaptureEvidence() {
       }
     });
 
-    if (response.success) {
-      showCompactNotification('Evidence captured successfully ✓', 'success');
+    if (response.success && response.screenshot) {
+      // Wait 1.5 seconds so user can read "Capturing..." message
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Convert base64 to blob
+      const base64Data = response.screenshot.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/png' });
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `evidence_${timestamp}.png`;
+
+      // Trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showCompactNotification(`✅ Downloaded: ${filename}`, 'success');
+
+      // Wait 2 seconds before showing motivational message
+      await new Promise(resolve => setTimeout(resolve, 2000));
       showMotivationalMessage('Go girl! You are strong and safe! 💗');
     } else {
-      showCompactNotification('Evidence saved (screenshot unavailable)', 'info');
+      showCompactNotification('❌ Screenshot capture failed', 'error');
     }
   } catch (error) {
     console.error('Evidence capture error:', error);
-    showCompactNotification('Evidence logged successfully', 'info');
+    showCompactNotification('Error capturing evidence', 'error');
   }
 }
 
@@ -449,11 +479,11 @@ function showNotification(message, type = 'info') {
 function showCompactNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.className = 'compact-notification';
-  
-  const bgColor = type === 'success' ? '#4CAF50' : 
-                  type === 'error' ? '#F44336' : 
-                  type === 'recording' ? '#E91E63' : '#2196F3';
-  
+
+  const bgColor = type === 'success' ? '#4CAF50' :
+    type === 'error' ? '#F44336' :
+      type === 'recording' ? '#E91E63' : '#2196F3';
+
   notification.style.cssText = `
     position: fixed;
     bottom: 70px;
@@ -472,9 +502,9 @@ function showCompactNotification(message, type = 'info') {
     animation: slideUp 0.2s ease-out;
   `;
   notification.textContent = message;
-  
+
   document.body.appendChild(notification);
-  
+
   // Remove after 2.5 seconds (shorter duration)
   setTimeout(() => {
     notification.style.animation = 'fadeOut 0.2s ease-out';
@@ -492,12 +522,12 @@ document.querySelector('[data-tab="circleTab"]')?.addEventListener('click', asyn
 // Render support circles list
 function renderCircles(circles) {
   const list = document.getElementById('circlesList');
-  
+
   if (circles.length === 0) {
     list.innerHTML = '<p class="empty-state">Join a support circle to connect with peers.</p>';
     return;
   }
-  
+
   list.innerHTML = circles.map(circle => `
     <div class="circle-item">
       <div class="circle-header">
@@ -512,7 +542,7 @@ function renderCircles(circles) {
       </button>
     </div>
   `).join('');
-  
+
   // Add event listeners to join buttons
   document.querySelectorAll('.btn-join-circle').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -525,14 +555,14 @@ function renderCircles(circles) {
 // Handle joining a specific circle
 async function handleJoinSpecificCircle(circleId) {
   showCompactNotification('Joining circle...', 'info');
-  
+
   // Female names with Kenyan ethnic diversity
   const femaleNames = [
     'Nekesa', 'Naliaka', 'Wanjala', 'Nduku', 'Mumbua', 'Syokau',
     'Wanjiru', 'Nyambura', 'Wangari', 'Njeri', 'Amina', 'Fatima'
   ];
   const memberName = femaleNames[Math.floor(Math.random() * femaleNames.length)];
-  
+
   setTimeout(() => {
     showCompactNotification(`Joined! ${memberName} and others are here for you! 💗`, 'success');
   }, 1000);
@@ -607,9 +637,9 @@ function showMotivationalMessage(message) {
     animation: slideUp 0.2s ease-out;
   `;
   notification.textContent = message;
-  
+
   document.body.appendChild(notification);
-  
+
   // Remove after 2.5 seconds
   setTimeout(() => {
     notification.style.animation = 'fadeOut 0.2s ease-out';
