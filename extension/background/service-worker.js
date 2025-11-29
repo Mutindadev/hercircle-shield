@@ -189,24 +189,17 @@ async function captureEvidence(tabId, data) {
       format: 'png'
     });
 
-    // Store evidence
-    const evidence = {
-      timestamp: Date.now(),
-      screenshot,
+    // Return screenshot data for download (don't store on server)
+    return {
+      success: true,
+      screenshot: screenshot,
+      timestamp: data.timestamp,
       url: data.url,
-      platform: data.platform,
-      description: data.description
+      title: data.title
     };
-
-    // Save to storage
-    const { evidenceList = [] } = await chrome.storage.local.get(['evidenceList']);
-    evidenceList.push(evidence);
-    await chrome.storage.local.set({ evidenceList });
-
-    return { success: true, evidenceId: evidenceList.length - 1 };
   } catch (error) {
     console.error('Evidence capture error:', error);
-    return { error: error.message };
+    return { success: false, error: error.message };
   }
 }
 
