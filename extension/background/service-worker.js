@@ -250,7 +250,7 @@ async function showHeartNotification() {
     title: 'HerCircle Shield',
     message,
     priority: 0
-  });
+  }); GOOGLE_CLIENT_SECRET
 }
 
 // Show daily stats
