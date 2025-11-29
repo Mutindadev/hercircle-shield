@@ -603,7 +603,7 @@ const motivationalMessages = [
   'Go girl! You are strong! 💪',
   'You are supported! ✨',
   'Stay safe, queen! 👑',
-  'You got this! 🌈'
+  '✨ You got this! ✨'
 ];
 
 function showRandomMotivationalMessage() {

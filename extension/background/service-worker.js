@@ -20,13 +20,10 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       autoHide: true,
       enableNotifications: true,
       enableGPS: false,
-      enableHeartAnimations: true,
+      enableHeartAnimations: false, // Disabled - using hover tooltips instead
       language: 'en'
     }
   });
-
-  // Set up periodic heart animations (every 2 hours)
-  chrome.alarms.create('heartAnimation', { periodInMinutes: 120 });
 
   // Set up daily stats summary
   chrome.alarms.create('dailyStats', { periodInMinutes: 1440 });
@@ -36,9 +33,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
 // Handle alarms
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'heartAnimation') {
-    showHeartNotification();
-  } else if (alarm.name === 'dailyStats') {
+  if (alarm.name === 'dailyStats') {
     showDailyStats();
   }
 });
@@ -222,29 +217,38 @@ async function alertTrustedContacts(data) {
   }
 }
 
-// Show heart animation notification
-async function showHeartNotification() {
-  const settings = await getSettings();
-  if (!settings.enableHeartAnimations) return;
-
+// Update hover message on extension icon (replaces popup notifications)
+function updateHoverMessage() {
   const messages = [
     "You're not alone 💗",
     "You're strong 💖",
     "We're here for you 💕",
     "Stay safe 💗",
-    "You matter 💖"
+    "You matter 💖",
+    "You are beautiful! 💗",
+    "Go girl! You are strong! 💪",
+    "You are supported! ✨",
+    "Stay safe, queen! 👑",
+    "✨ You got this! ✨"
   ];
 
   const message = messages[Math.floor(Math.random() * messages.length)];
 
-  chrome.notifications.create({
-    type: 'basic',
-    iconUrl: '../icons/heart-glow-48.png',
-    title: 'HerCircle Shield',
-    message,
-    priority: 0
-  }); GOOGLE_CLIENT_SECRET
+  // Update the extension icon tooltip (shows on hover)
+  chrome.action.setTitle({ title: message });
 }
+
+// Update message on startup
+chrome.runtime.onStartup.addListener(() => {
+  updateHoverMessage();
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+  updateHoverMessage();
+});
+
+// Refresh message every 5 minutes for variety
+setInterval(updateHoverMessage, 5 * 60 * 1000);
 
 // Show daily stats
 async function showDailyStats() {
